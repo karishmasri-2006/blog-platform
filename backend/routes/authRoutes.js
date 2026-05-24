@@ -5,18 +5,17 @@ const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// REGISTER - this one works already
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
-    // Check if user exists
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields required' });
+    }
+
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { email: email },
-          { username: username }
-        ]
+        OR: [{ email: email }, { username: username }]
       }
     });
 
@@ -24,10 +23,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         username,
@@ -50,13 +47,16 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// LOGIN - THIS WAS MISSING - ADDING IT NOW
+// LOGIN ROUTE - MAKE SURE THIS EXISTS
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log('Login attempt for:', email);
 
-    // Find user by email
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' });
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: email }
     });
@@ -65,14 +65,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Check password
     const validPassword = await bcrypt.compare(password, user.password);
     
     if (!validPassword) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Login success - return user data
     res.status(200).json({
       message: 'Login success',
       user: {

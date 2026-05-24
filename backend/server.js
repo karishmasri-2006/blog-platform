@@ -1,19 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/authRoutes'); // <-- CHANGED FROM ./routes/auth
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes); // <-- THIS LINE CONNECTS /api/auth/login
+app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Blog Platform API Running');
+  res.json({ message: 'Blog Platform API Running' });
 });
 
 app.listen(PORT, () => {
