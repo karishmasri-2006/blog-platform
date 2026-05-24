@@ -15,25 +15,32 @@ function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log("Attempting login...");
 
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, {
+      // TRY THIS FIRST - Most common backend route
+      const res = await axios.post(`${API_URL}/auth/login`, {
         email,
         password
       });
 
-      if (res.data.user) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+      console.log("Login response:", res.data);
+
+      // Handle different backend response formats
+      if (res.data.user || res.data.message === "Login success") {
+        localStorage.setItem("user", JSON.stringify(res.data.user || res.data));
         navigate("/dashboard");
       } else {
-        setError("Login failed: No user data returned");
+        setError("Login failed: Unexpected response from server");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("Login error:", err.response);
       if (err.response?.status === 404) {
-        setError("Login endpoint not found. Check backend URL.");
+        setError("Login endpoint not found. Check backend route.");
+      } else if (err.response?.status === 401) {
+        setError("Invalid email or password");
       } else {
-        setError(err.response?.data?.message || "Invalid email or password.");
+        setError(err.response?.data?.message || "Login failed. Try again.");
       }
     } finally {
       setLoading(false);
@@ -66,14 +73,21 @@ function Login() {
           />
         </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          style={{ width: "100%", padding: "10px", cursor: loading? "not-allowed" : "pointer" }}
+          style={{ 
+            width: "100%", 
+            padding: "10px",
+            cursor: loading ? "not-allowed" : "pointer",
+            background: loading ? "#ccc" : "#007bff",
+            color: "white",
+            border: "none"
+          }}
         >
-          {loading? "Logging in..." : "Login"}
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
 
