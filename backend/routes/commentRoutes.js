@@ -1,32 +1,27 @@
-import express from "express"
-import prisma from "../prismaClient.js"
-import authMiddleware from "../middleware/authMiddleware.js"
+const express = require("express");
+const router = express.Router();
 
-const router = express.Router()
+// TEMP in-memory comments (for testing)
+let comments = [];
 
-router.post("/:postId", authMiddleware, async (req, res) => {
-  try {
-    const { text } = req.body
+// GET all comments
+router.get("/", (req, res) => {
+  res.json(comments);
+});
 
-    const comment = await prisma.comment.create({
-      data: {
-        text,
-        userId: req.user.id,
-        postId: req.params.postId,
-      },
-    })
+// POST comment
+router.post("/", (req, res) => {
+  const { text, user } = req.body;
 
-    res.json({
-      message: "Comment added",
-      comment,
-    })
-  } catch (error) {
-    console.log(error)
+  const newComment = {
+    id: Date.now(),
+    text,
+    user
+  };
 
-    res.status(500).json({
-      message: "Server error",
-    })
-  }
-})
+  comments.push(newComment);
 
-export default router
+  res.json(newComment);
+});
+
+module.exports = router;

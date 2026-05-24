@@ -1,32 +1,24 @@
-import express from 'express'
-import cors from 'cors'
-import dotenv from 'dotenv'
-import authRoutes from './routes/authRoutes.js'
-import postRoutes from './routes/postRoutes.js'
+const express = require("express");
+const cors = require("cors");
 
-dotenv.config()
+const app = express();
 
-const app = express()
-const PORT = process.env.PORT || 10000
-
-// CORS - allows your frontend to talk to backend
+// middleware
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'https://blog-platform-f7yo.onrender.com'
-  ],
-  credentials: true
-}))
+  origin: "*", // later you can lock it to frontend URL
+}));
+app.use(express.json());
 
-app.use(express.json())
+// routes
+const commentRoutes = require("./routes/commentRoutes");
+app.use("/api/comments", commentRoutes);
 
-app.use('/api/auth', authRoutes)
-app.use('/api/posts', postRoutes)
+// test route
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Blog API is running!' })
-})
-
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+  console.log(`Server running on port ${PORT}`);
+});
