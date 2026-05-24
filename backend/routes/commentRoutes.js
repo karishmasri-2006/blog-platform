@@ -1,6 +1,7 @@
 import express from "express";
 const router = express.Router();
 
+// In-memory storage - no database needed
 let comments = [];
 
 router.get("/", (req, res) => {
