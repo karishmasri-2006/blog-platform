@@ -1,33 +1,28 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-require("dotenv").config();
+import express from "express";
+const router = express.Router();
 
-const app = express();
+let comments = [];
 
-// Middleware
-app.use(cors({
-  origin: ["https://blog-platform-f7yo.onrender.com", "http://localhost:5173"]
-}));
-app.use(express.json());
-
-// Connect DB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
-
-// Routes - ADD THESE 2 LINES
-const postRoutes = require("./routes/posts"); // if you have posts
-const commentRoutes = require("./routes/commentRoutes"); // NEW
-app.use("/api/posts", postRoutes); // if you have posts  
-app.use("/api/comments", commentRoutes); // NEW
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("API is running");
+router.get("/", (req, res) => {
+  res.json(comments);
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+router.post("/", (req, res) => {
+  const { text, user } = req.body;
+  
+  if (!text) {
+    return res.status(400).json({ message: "Text is required" });
+  }
+
+  const newComment = {
+    id: Date.now().toString(),
+    text,
+    user: user || "Anonymous",
+    createdAt: new Date()
+  };
+
+  comments.push(newComment);
+  res.status(201).json(newComment);
 });
+
+export default router;
