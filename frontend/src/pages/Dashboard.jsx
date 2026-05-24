@@ -9,16 +9,14 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Get user from localStorage
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }
 
-    // Fetch all blog posts
     const fetchPosts = async () => {
       try {
-        const res = await api.get('/posts'); // GET /api/posts
+        const res = await api.get('/posts');
         setPosts(res.data);
       } catch (err) {
         console.error('Error fetching posts:', err);
@@ -41,19 +39,18 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1>Dashboard</h1>
-        <div>
-          <span>Welcome, {user?.email}!</span>
+        <h1>My Blog Platform</h1>
+        <div className="header-actions">
           <Link to="/create-post">
-            <button>Create New Blog</button>
+            <button className="btn-primary">Create New Blog</button>
           </Link>
-          <button onClick={handleLogout}>Logout</button>
+          <button onClick={handleLogout} className="btn-logout">Logout</button>
         </div>
       </div>
 
       <div className="posts-container">
         <h2>All Blog Posts</h2>
-        {posts.length === 0 ? (
+        {posts.length === 0? (
           <p>No blog posts yet. <Link to="/create-post">Create your first post</Link></p>
         ) : (
           posts.map((post) => (
@@ -61,9 +58,11 @@ const Dashboard = () => {
               <h3>
                 <Link to={`/post/${post._id}`}>{post.title}</Link>
               </h3>
-              <p>By: {post.author?.email}</p>
-              <p>{post.content.substring(0, 100)}...</p>
-              <Link to={`/post/${post._id}`}>Read More & Comments</Link>
+              <p className="post-meta">By: {post.author?.email}</p>
+              <p>{post.content.substring(0, 150)}...</p>
+              <div className="post-actions">
+                <Link to={`/post/${post._id}`}>Read More & Comments</Link>
+              </div>
             </div>
           ))
         )}

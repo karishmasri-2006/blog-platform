@@ -9,14 +9,18 @@ const CreatePost = () => {
     content: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await api.post('/posts', formData); // POST /api/posts
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create post');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +43,9 @@ const CreatePost = () => {
           rows="10"
           required
         />
-        <button type="submit">Publish Post</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Publishing...' : 'Publish Post'}
+        </button>
       </form>
     </div>
   );
