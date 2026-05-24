@@ -1,16 +1,72 @@
-const handleLogin = async (e) => {
-  e.preventDefault();
-  try {
-    const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-      email,
-      password
-    });
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
-    if (res.data.message === "Login success") {
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      navigate("/dashboard"); // This will work now
+function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const API_URL = "https://blog-platform-f7yo.onrender.com";
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/login`, {
+        email,
+        password
+      });
+
+      if (res.data.message === "Login success") {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        navigate("/dashboard"); // Now this works because Dashboard exists
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Try again.");
     }
-  } catch (err) {
-    setError(err.response?.data?.message || "Login failed");
-  }
-};
+  };
+
+  return (
+    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
+      <h2>Login</h2>
+      <form onSubmit={handleLogin}>
+        <div style={{ marginBottom: "10px" }}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
+        
+        <div style={{ marginBottom: "10px" }}>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
+
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        
+        <button type="submit" style={{ width: "100%", padding: "10px" }}>
+          Login
+        </button>
+      </form>
+      
+      <p style={{ marginTop: "15px" }}>
+        Don't have an account? <Link to="/register">Register here</Link>
+      </p>
+    </div>
+  );
+}
+
+export default Login; // <-- THIS FIXES THE BUILD ERROR
