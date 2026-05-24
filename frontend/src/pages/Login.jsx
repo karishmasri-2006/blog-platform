@@ -15,32 +15,40 @@ function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    console.log("Attempting login...");
+    console.log("Attempting login to:", `${API_URL}/api/auth/login`);
 
     try {
-      // TRY THIS FIRST - Most common backend route
-      const res = await axios.post(`${API_URL}/auth/login`, {
+      const res = await axios.post(`${API_URL}/api/auth/login`, {
         email,
         password
       });
 
       console.log("Login response:", res.data);
 
-      // Handle different backend response formats
-      if (res.data.user || res.data.message === "Login success") {
-        localStorage.setItem("user", JSON.stringify(res.data.user || res.data));
+      // Your backend likely returns { user: {...} } or { message: "Login success", user: {...} }
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        navigate("/dashboard");
+      } else if (res.data.message === "Login success" && res.data.token) {
+        localStorage.setItem("user", JSON.stringify(res.data));
         navigate("/dashboard");
       } else {
-        setError("Login failed: Unexpected response from server");
+        setError("Login failed: No user data in response");
       }
     } catch (err) {
-      console.error("Login error:", err.response);
+      console.error("Login error:", err);
+      console.error("Error response:", err.response);
+      
       if (err.response?.status === 404) {
-        setError("Login endpoint not found. Check backend route.");
+        setError("Login endpoint not found. Backend route issue.");
       } else if (err.response?.status === 401) {
         setError("Invalid email or password");
+      } else if (err.response?.status === 400) {
+        setError(err.response?.data?.message || "Invalid request");
+      } else if (err.code === "ERR_NETWORK") {
+        setError("Cannot connect to server. Backend might be sleeping.");
       } else {
-        setError(err.response?.data?.message || "Login failed. Try again.");
+        setError("Login failed. Check console for details.");
       }
     } finally {
       setLoading(false);
