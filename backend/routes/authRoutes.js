@@ -9,6 +9,7 @@ router.get("/test", (req, res) => {
   res.send("Auth route working")
 })
 
+
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body
