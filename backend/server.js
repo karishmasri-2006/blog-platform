@@ -1,27 +1,32 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import postRoutes from './routes/postRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import commentRoutes from './routes/commentRoutes.js';
+import express from 'express'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import authRoutes from './routes/authRoutes.js'
+import postRoutes from './routes/postRoutes.js'
 
-dotenv.config();
+dotenv.config()
 
-const app = express();
+const app = express()
+const PORT = process.env.PORT || 10000
 
-app.use(cors());
-app.use(express.json());
+// CORS - allows your frontend to talk to backend
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://blog-platform-f7yo.onrender.com'
+  ],
+  credentials: true
+}))
+
+app.use(express.json())
+
+app.use('/api/auth', authRoutes)
+app.use('/api/posts', postRoutes)
 
 app.get('/', (req, res) => {
-  res.send('Blog Platform API is running');
-});
+  res.json({ message: 'Blog API is running!' })
+})
 
-app.use('/api/posts', postRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/comments', commentRoutes);
-
-// Critical fix for Render
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
