@@ -1,54 +1,59 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axios'; // This uses your fixed axios.js
 
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+const Login = () => {
   const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://blog-platform-f7yo.onrender.com";
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
-    console.log("Attempting login to:", `${API_URL}/api/auth/login`);
 
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, {
-        email,
-        password
-      });
-
-      console.log("Login response:", res.data);
-
-      // Your backend likely returns { user: {...} } or { message: "Login success", user: {...} }
-      if (res.data.user) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        navigate("/dashboard");
-      } else if (res.data.message === "Login success" && res.data.token) {
-        localStorage.setItem("user", JSON.stringify(res.data));
-        navigate("/dashboard");
-      } else {
-        setError("Login failed: No user data in response");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      console.error("Error response:", err.response);
+      // IMPORTANT: No /api here. baseURL already has /api
+      const res = await api.post('/auth/login', formData);
       
-      if (err.response?.status === 404) {
-        setError("Login endpoint not found. Backend route issue.");
-      } else if (err.response?.status === 401) {
-        setError("Invalid email or password");
-      } else if (err.response?.status === 400) {
-        setError(err.response?.data?.message || "Invalid request");
-      } else if (err.code === "ERR_NETWORK") {
-        setError("Cannot connect to server. Backend might be sleeping.");
+      console.log('Login success:', res.data);
+      
+      // Save token if your backend sends one
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+      
+      // Save user data
+      if (res.data.user) {
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
+
+      // Redirect to dashboard or home
+      navigate('/dashboard');
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      // Show the actual error from backend
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 404) {
+        setError('Login endpoint not found. Check API URL.');
       } else {
-        setError("Login failed. Check console for details.");
+        setError('Login failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -56,54 +61,44 @@ function Login() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: "10px" }}>
+    <div className="login-container">
+      <form onSubmit={handleSubmit} className="login-form">
+        <h2>Login</h2>
+        
+        {error && <div className="error-message">{error}</div>}
+        
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
           <input
             type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             required
-            style={{ width: "100%", padding: "8px" }}
+            placeholder="Enter your email"
           />
         </div>
 
-        <div style={{ marginBottom: "10px" }}>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
           <input
             type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
             required
-            style={{ width: "100%", padding: "8px" }}
+            placeholder="Enter your password"
           />
         </div>
 
-        {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ 
-            width: "100%", 
-            padding: "10px",
-            cursor: loading ? "not-allowed" : "pointer",
-            background: loading ? "#ccc" : "#007bff",
-            color: "white",
-            border: "none"
-          }}
-        >
-          {loading ? "Logging in..." : "Login"}
+        <button type="submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
-
-      <p style={{ marginTop: "15px" }}>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
     </div>
   );
-}
+};
 
 export default Login;
