@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios'; // This uses your fixed axios.js
+import api from '../api/axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,32 +26,30 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // IMPORTANT: No /api here. baseURL already has /api
+      // Final URL will be: https://blog-platform-api-bnk5.onrender.com/api/auth/login
       const res = await api.post('/auth/login', formData);
       
-      console.log('Login success:', res.data);
+      console.log('Login response:', res.data);
       
-      // Save token if your backend sends one
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
       }
       
-      // Save user data
       if (res.data.user) {
         localStorage.setItem('user', JSON.stringify(res.data.user));
       }
 
-      // Redirect to dashboard or home
       navigate('/dashboard');
       
     } catch (err) {
       console.error('Login error:', err);
       
-      // Show the actual error from backend
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 404) {
         setError('Login endpoint not found. Check API URL.');
+      } else if (err.response?.status === 401) {
+        setError('Invalid email or password.');
       } else {
         setError('Login failed. Please try again.');
       }
