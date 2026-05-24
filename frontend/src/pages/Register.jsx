@@ -7,6 +7,7 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -15,7 +16,9 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
+    console.log("Register button clicked"); // Debug
 
     try {
       const res = await axios.post(`${API_URL}/api/auth/register`, {
@@ -24,12 +27,26 @@ function Register() {
         password
       });
 
-      if (res.data.message === "User registered" || res.data.user) {
-        navigate("/login");
+      console.log("Register response:", res.data); // Debug
+
+      // Backend might return different success messages
+      if (res.status === 200 || res.status === 201) {
+        setSuccess("Registration successful! Redirecting to login...");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      } else {
+        setError("Registration failed: Unexpected response");
       }
     } catch (err) {
-      console.error("Register error:", err);
-      setError(err.response?.data?.message || "Registration failed. Try again.");
+      console.error("Register error:", err.response); // Debug
+      if (err.response?.status === 400) {
+        setError(err.response?.data?.message || "User already exists or invalid data");
+      } else if (err.response?.status === 500) {
+        setError("Server error. Try again later.");
+      } else {
+        setError("Registration failed. Check console for details.");
+      }
     } finally {
       setLoading(false);
     }
@@ -68,18 +85,27 @@ function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength="6"
             style={{ width: "100%", padding: "8px" }}
           />
         </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
+        {success && <p style={{ color: "green", marginBottom: "10px" }}>{success}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          style={{ width: "100%", padding: "10px" }}
+          style={{ 
+            width: "100%", 
+            padding: "10px",
+            cursor: loading ? "not-allowed" : "pointer",
+            background: loading ? "#ccc" : "#007bff",
+            color: "white",
+            border: "none"
+          }}
         >
-          {loading? "Creating account..." : "Register"}
+          {loading ? "Creating account..." : "Register"}
         </button>
       </form>
 
