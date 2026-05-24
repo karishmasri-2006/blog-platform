@@ -1,85 +1,33 @@
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import API from "../api/axios"
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
-  const navigate = useNavigate()
-
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-  })
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-
-    if (!token) {
-      navigate("/login")
+    const userData = localStorage.getItem("user");
+    if (!userData) {
+      navigate("/login");
+    } else {
+      setUser(JSON.parse(userData));
     }
-  }, [])
+  }, [navigate]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    try {
-      const token = localStorage.getItem("token")
-
-      const res = await API.post("/posts", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      alert(res.data.message)
-
-      setFormData({
-        title: "",
-        content: "",
-      })
-
-      navigate("/")
-    } catch (error) {
-      alert(error.response.data.message)
-    }
-  }
+  if (!user) return <div style={{ padding: "20px" }}>Loading...</div>;
 
   return (
-    <div>
-      <h1>Create Blog Post</h1>
-
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="title"
-          placeholder="Post title"
-          value={formData.title}
-          onChange={handleChange}
-        />
-
-        <br /><br />
-
-        <textarea
-          name="content"
-          placeholder="Post content"
-          value={formData.content}
-          onChange={handleChange}
-        />
-
-        <br /><br />
-
-        <button type="submit">
-          Create Post
-        </button>
-      </form>
+    <div style={{ padding: "20px" }}>
+      <h1>Welcome, {user.name}!</h1>
+      <p>Email: {user.email}</p>
+      <button onClick={handleLogout}>Logout</button>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;
