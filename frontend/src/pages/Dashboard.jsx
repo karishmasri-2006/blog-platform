@@ -6,11 +6,11 @@ function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
       navigate("/login");
     } else {
-      setUser(JSON.parse(userData));
+      setUser(JSON.parse(storedUser));
     }
   }, [navigate]);
 
@@ -19,13 +19,15 @@ function Dashboard() {
     navigate("/login");
   };
 
-  if (!user) return <div style={{ padding: "20px" }}>Loading...</div>;
+  if (!user) return <div>Loading...</div>;
 
   return (
     <div style={{ padding: "20px" }}>
-      <h1>Welcome, {user.name}!</h1>
-      <p>Email: {user.email}</p>
-      <button onClick={handleLogout}>Logout</button>
+      <h1>Dashboard</h1>
+      <p>Welcome, {user.username || user.email}!</p>
+      <button onClick={handleLogout} style={{ padding: "10px 20px", marginTop: "20px" }}>
+        Logout
+      </button>
     </div>
   );
 }

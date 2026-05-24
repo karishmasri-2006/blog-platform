@@ -1,77 +1,93 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import API from "../api/axios"
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 function Register() {
-  const navigate = useNavigate()
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  })
+  const API_URL = "https://blog-platform-f7yo.onrender.com";
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      const res = await API.post("/auth/register", formData)
+      const res = await axios.post(`${API_URL}/api/auth/register`, {
+        username,
+        email,
+        password
+      });
 
-      alert(res.data.message)
-
-      navigate("/login")
-    } catch (error) {
-      alert(error.response.data.message)
+      if (res.data.message === "User registered" || res.data.user) {
+        navigate("/login");
+      }
+    } catch (err) {
+      console.error("Register error:", err);
+      setError(err.response?.data?.message || "Registration failed. Try again.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div>
-      <h1>Register</h1>
+    <div style={{ padding: "20px", maxWidth: "400px", margin: "0 auto" }}>
+      <h2>Register</h2>
+      <form onSubmit={handleRegister}>
+        <div style={{ marginBottom: "10px" }}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          onChange={handleChange}
-        />
+        <div style={{ marginBottom: "10px" }}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
 
-        <br /><br />
+        <div style={{ marginBottom: "10px" }}>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: "100%", padding: "8px" }}
+          />
+        </div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-        />
+        {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <br /><br />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-        />
-
-        <br /><br />
-
-        <button type="submit">Register</button>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{ width: "100%", padding: "10px" }}
+        >
+          {loading? "Creating account..." : "Register"}
+        </button>
       </form>
 
-      <br />
-
-      <Link to="/login">Already have an account?</Link>
+      <p style={{ marginTop: "15px" }}>
+        Already have an account? <Link to="/login">Login here</Link>
+      </p>
     </div>
-  )
+  );
 }
 
 export default Register;
