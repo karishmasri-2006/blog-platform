@@ -21,15 +21,16 @@ router.get('/', async (req, res) => {
     })
     res.json(posts)
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message })
   }
 })
 
-// GET SINGLE POST
+// GET SINGLE POST - NO parseInt()
 router.get('/:id', async (req, res) => {
   try {
     const post = await prisma.post.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: req.params.id }, // REMOVED parseInt
       include: {
         author: { select: { id: true, name: true } },
         comments: {
@@ -43,6 +44,7 @@ router.get('/:id', async (req, res) => {
     if (!post) return res.status(404).json({ message: 'Post not found' })
     res.json(post)
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message })
   }
 })
@@ -68,18 +70,18 @@ router.post('/', protect, async (req, res) => {
   }
 })
 
-// UPDATE POST
+// UPDATE POST - NO parseInt()
 router.put('/:id', protect, async (req, res) => {
   try {
     const post = await prisma.post.findUnique({
-      where: { id: parseInt(req.params.id) }
+      where: { id: req.params.id } // REMOVED parseInt
     })
 
     if (!post) return res.status(404).json({ message: 'Post not found' })
     if (post.authorId!== req.user.id) return res.status(401).json({ message: 'Not authorized' })
 
     const updatedPost = await prisma.post.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id: req.params.id }, // REMOVED parseInt
       data: req.body,
       include: {
         author: { select: { id: true, name: true } }
@@ -91,21 +93,23 @@ router.put('/:id', protect, async (req, res) => {
   }
 })
 
-// DELETE POST
+// DELETE POST - NO parseInt()
 router.delete('/:id', protect, async (req, res) => {
   try {
     const post = await prisma.post.findUnique({
-      where: { id: parseInt(req.params.id) }
+      where: { id: req.params.id } // REMOVED parseInt
     })
 
     if (!post) return res.status(404).json({ message: 'Post not found' })
     if (post.authorId!== req.user.id) return res.status(401).json({ message: 'Not authorized' })
 
+    // Comments will auto-delete because of onDelete: Cascade in schema
     await prisma.post.delete({
-      where: { id: parseInt(req.params.id) }
+      where: { id: req.params.id } // REMOVED parseInt
     })
     res.json({ message: 'Post deleted' })
   } catch (error) {
+    console.log(error)
     res.status(500).json({ message: error.message })
   }
 })

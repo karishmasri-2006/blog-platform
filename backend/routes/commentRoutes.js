@@ -5,7 +5,7 @@ const protect = require('../middleware/auth')
 
 const prisma = new PrismaClient()
 
-// POST COMMENT
+// POST COMMENT - NO parseInt() for postId
 router.post('/', protect, async (req, res) => {
   try {
     const { content, postId } = req.body
@@ -21,7 +21,7 @@ router.post('/', protect, async (req, res) => {
     const comment = await prisma.comment.create({
       data: {
         content,
-        postId: parseInt(postId),
+        postId: postId, // REMOVED parseInt - postId is string
         authorId: req.user.id
       },
       include: {
@@ -37,11 +37,11 @@ router.post('/', protect, async (req, res) => {
   }
 })
 
-// DELETE COMMENT
+// DELETE COMMENT - NO parseInt()
 router.delete('/:id', protect, async (req, res) => {
   try {
     const comment = await prisma.comment.findUnique({
-      where: { id: parseInt(req.params.id) }
+      where: { id: req.params.id } // REMOVED parseInt
     })
 
     if (!comment) {
@@ -53,7 +53,7 @@ router.delete('/:id', protect, async (req, res) => {
     }
 
     await prisma.comment.delete({
-      where: { id: parseInt(req.params.id) }
+      where: { id: req.params.id } // REMOVED parseInt
     })
     res.json({ message: 'Comment deleted successfully' })
   } catch (error) {
