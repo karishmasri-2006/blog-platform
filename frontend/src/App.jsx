@@ -75,11 +75,10 @@ function ProtectedRoute({ children }) {
   return getToken()? children : <Navigate to="/login" replace />
 }
 
-// NAVBAR WITH LOGOUT + DARK MODE
+// NAVBAR WITH LOGOUT + DARK MODE TEXT
 function Navbar() {
   const navigate = useNavigate()
   const { darkMode, setDarkMode } = useTheme()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   const logout = () => {
     removeToken()
@@ -95,20 +94,20 @@ function Navbar() {
   }
 
   const btnStyle = {
-    padding: '8px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+    padding: '8px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer',
     background: darkMode? '#333' : '#f0f0f0',
-    color: darkMode? '#fff' : '#000', fontSize: '14px'
+    color: darkMode? '#fff' : '#000', fontSize: '14px', fontWeight: '500'
   }
 
   return (
     <nav style={navStyle}>
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
         <Link to="/" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
         <Link to="/create" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Create</Link>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <button onClick={() => setDarkMode(!darkMode)} style={btnStyle}>
-          {darkMode? '☀️' : '🌙'}
+          {darkMode? 'Light Mode' : 'Dark Mode'}
         </button>
         <button onClick={logout} style={btnStyle}>Logout</button>
       </div>
@@ -463,7 +462,7 @@ function PostPage() {
   )
 }
 
-// MAIN APP - ROOT REDIRECTS TO LOGIN
+// MAIN APP
 function App() {
   return (
     <ThemeProvider>
