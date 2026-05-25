@@ -1,19 +1,19 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL
-
-const api = axios.create({
-  baseURL: `${API_URL}/api`, // /api lives here now
-  withCredentials: false
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 })
 
-// Optional: Add token to every request if it exists
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Request interceptor - ONLY add token if it exists
+API.interceptors.request.use((req) => {
+  const user = JSON.parse(localStorage.getItem('user'))
+  
+  // Don't add token for register or login routes
+  if (user && user.token &&!req.url.includes('/users/register') &&!req.url.includes('/users/login')) {
+    req.headers.Authorization = `Bearer ${user.token}`
   }
-  return config;
-});
+  
+  return req
+})
 
-export default api
+export default API
