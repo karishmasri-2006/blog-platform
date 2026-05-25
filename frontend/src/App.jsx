@@ -102,7 +102,7 @@ function Navbar() {
   return (
     <nav style={navStyle}>
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-        <Link to="/" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+        <Link to="/home" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
         <Link to="/create" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Create</Link>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -144,7 +144,7 @@ function Login() {
   const { darkMode } = useTheme()
 
   useEffect(() => {
-    if (getToken()) navigate('/', { replace: true })
+    if (getToken()) navigate('/home', { replace: true })
   }, [navigate])
 
   const handleLogin = async (e) => {
@@ -153,7 +153,7 @@ function Login() {
       const res = await axios.post(`${API}/auth/login`, { email, password })
       setToken(res.data.token)
       setToast({ message: 'Login successful!', type: 'success' })
-      setTimeout(() => navigate('/', { replace: true }), 1000)
+      setTimeout(() => navigate('/home', { replace: true }), 1000)
     } catch {
       setToast({ message: 'Invalid credentials', type: 'error' })
     }
@@ -298,7 +298,7 @@ function CreatePost() {
     try {
       await axios.post(`${API}/posts`, { title, content, published })
       setToast({ message: published? 'Blog published!' : 'Draft saved!', type: 'success' })
-      setTimeout(() => navigate('/', { replace: true }), 1000)
+      setTimeout(() => navigate('/home', { replace: true }), 1000)
     } catch {
       setToast({ message: 'Failed to create post', type: 'error' })
     }
@@ -347,7 +347,7 @@ function EditPost() {
       setTitle(res.data.title)
       setContent(res.data.content)
       setPublished(res.data.published)
-    }).catch(() => navigate('/'))
+    }).catch(() => navigate('/home'))
   }, [id, navigate])
 
   const handleUpdate = async (e) => {
@@ -355,7 +355,7 @@ function EditPost() {
     try {
       await axios.put(`${API}/posts/${id}`, { title, content, published })
       setToast({ message: 'Post updated!', type: 'success' })
-      setTimeout(() => navigate('/', { replace: true }), 1000)
+      setTimeout(() => navigate('/home', { replace: true }), 1000)
     } catch {
       setToast({ message: 'Failed to update', type: 'error' })
     }
@@ -462,7 +462,7 @@ function PostPage() {
   )
 }
 
-// MAIN APP
+// MAIN APP - LOGIN FIRST
 function App() {
   return (
     <ThemeProvider>
@@ -470,10 +470,11 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
           <Route path="/edit/:id" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
           <Route path="/post/:id" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
-          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
