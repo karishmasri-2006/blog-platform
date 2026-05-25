@@ -228,7 +228,7 @@ function Register() {
   )
 }
 
-// HOME PAGE
+// HOME PAGE - NOW WITH COMMENT COUNT
 function Home() {
   const [posts, setPosts] = useState([])
   const [toast, setToast] = useState(null)
@@ -270,13 +270,17 @@ function Home() {
               <Link to={`/post/${post.id}`} style={{ color: darkMode? '#4da6ff' : '#0066cc', textDecoration: 'none' }}>{post.title}</Link>
             </h3>
             <p style={{ color: darkMode? '#ccc' : '#555', lineHeight: '1.6', marginBottom: '12px' }}>{post.content.substring(0, 150)}...</p>
-            <small style={{ color: darkMode? '#888' : '#999' }}>By: {post.author.name}</small><br /><br />
-            {post.author.id === userId && (
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <Link to={`/edit/${post.id}`}><button style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: darkMode? '#333' : '#f0f0f0', cursor: 'pointer', fontSize: '14px' }}>Edit</button></Link>
-                <button onClick={() => deletePost(post.id)} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: '#ff4444', color: 'white', cursor: 'pointer', fontSize: '14px' }}>Delete</button>
-              </div>
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <small style={{ color: darkMode? '#888' : '#999' }}>
+                By: {post.author.name} • 💬 {post.comments?.length || 0} Comments
+              </small>
+              {post.author.id === userId && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Link to={`/edit/${post.id}`}><button style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: darkMode? '#333' : '#f0f0f0', cursor: 'pointer', fontSize: '14px' }}>Edit</button></Link>
+                  <button onClick={() => deletePost(post.id)} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: '#ff4444', color: 'white', cursor: 'pointer', fontSize: '14px' }}>Delete</button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -389,13 +393,14 @@ function EditPost() {
   )
 }
 
-// SINGLE POST + COMMENTS
+// SINGLE POST + COMMENTS WITH DELETE
 function PostPage() {
   const { id } = useParams()
   const [post, setPost] = useState(null)
   const [comment, setComment] = useState('')
   const [toast, setToast] = useState(null)
   const { darkMode } = useTheme()
+  const userId = getUserId()
 
   const loadPost = () => {
     axios.get(`${API}/posts/${id}`).then(res => setPost(res.data))
@@ -415,6 +420,17 @@ function PostPage() {
       loadPost()
     } catch {
       setToast({ message: 'Failed to add comment', type: 'error' })
+    }
+  }
+
+  const deleteComment = async (commentId) => {
+    if (!window.confirm('Delete this comment?')) return
+    try {
+      await axios.delete(`${API}/comments/${commentId}`)
+      setToast({ message: 'Comment deleted', type: 'success' })
+      loadPost()
+    } catch {
+      setToast({ message: 'Failed to delete comment', type: 'error' })
     }
   }
 
@@ -446,7 +462,18 @@ function PostPage() {
               background: darkMode? '#1a1a1a' : '#f9f9f9',
               borderRadius: '6px', wordWrap: 'break-word'
             }}>
-              <b style={{ color: darkMode? '#4da6ff' : '#0066cc' }}>{c.author.name}:</b> {c.content}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <b style={{ color: darkMode? '#4da6ff' : '#0066cc' }}>{c.author.name}:</b> {c.content}
+                </div>
+                {c.author.id === userId && (
+                  <button onClick={() => deleteComment(c.id)} style={{
+                    padding: '4px 8px', borderRadius: '4px', border: 'none',
+                    background: '#ff4444', color: 'white', cursor: 'pointer',
+                    fontSize: '12px', flexShrink: 0
+                  }}>Delete</button>
+                )}
+              </div>
             </div>
           ))}
         </div>
