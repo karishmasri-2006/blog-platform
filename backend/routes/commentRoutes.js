@@ -1,41 +1,41 @@
-const express = require('express');
-const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
-const prisma = new PrismaClient();
+const express = require('express')
+const { protect } = require('../middleware/authMiddleware')
+const Comment = require('../models/Comment')
+const router = express.Router()
 
-// Auth middleware
-const auth = async (req, res, next) => {
+// POST comment
+router.post('/', protect, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Invalid token' });
+    const { content, postId } = req.body
+    const comment = await Comment.create({
+      content,
+      post: postId,
+      author: req.user._id
+    })
+    res.status(201).json(comment)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-};
+})
 
-// ADD comment - any logged in user
-router.post('/', auth, async (req, res) => {
+// DELETE COMMENT - ADD THIS
+router.delete('/:id', protect, async (req, res) => {
   try {
-    const { content, postId } = req.body;
-    if (!content ||!postId) {
-      return res.status(400).json({ message: 'Content and postId required' });
+    const comment = await Comment.findById(req.params.id)
+    
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' })
     }
-
-    const comment = await prisma.comment.create({
-      data: {
-        content,
-        postId,
-        authorId: req.userId
-      },
-      include: { author: { select: { name: true } } }
-    });
-    res.json(comment);
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to add comment' });
+    
+    if (comment.author.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized to delete this comment' })
+    }
+    
+    await Comment.findByIdAndDelete(req.params.id)
+    res.json({ message: 'Comment deleted successfully' })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
