@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, Navigate } from 'react-router-dom'
 import axios from 'axios'
 
 const API = 'https://blog-platform-api-bnk5.onrender.com/api'
@@ -13,8 +13,10 @@ function ThemeProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem('theme', darkMode? 'dark' : 'light')
-    document.body.style.background = darkMode? '#1a1a1a' : '#fff'
+    document.body.style.background = darkMode? '#0f0f0f' : '#f5f5f5'
     document.body.style.color = darkMode? '#fff' : '#000'
+    document.body.style.margin = '0'
+    document.body.style.fontFamily = 'system-ui, -apple-system, sans-serif'
   }, [darkMode])
 
   return (
@@ -34,9 +36,9 @@ function Toast({ message, type, onClose }) {
   return (
     <div style={{
       position: 'fixed', top: '20px', right: '20px',
-      padding: '12px 20px', borderRadius: '5px', color: '#fff',
+      padding: '12px 20px', borderRadius: '8px', color: '#fff',
       background: type === 'success'? '#28a745' : '#dc3545',
-      zIndex: 1000
+      zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
     }}>
       {message}
     </div>
@@ -66,6 +68,11 @@ axios.interceptors.request.use(config => {
   return config
 })
 
+// PROTECTED ROUTE - Redirect to login if no token
+function ProtectedRoute({ children }) {
+  return getToken()? children : <Navigate to="/login" />
+}
+
 // NAVBAR WITH LOGOUT + DARK MODE
 function Navbar() {
   const navigate = useNavigate()
@@ -77,24 +84,51 @@ function Navbar() {
   }
 
   const navStyle = {
-    padding: '15px', marginBottom: '20px',
-    background: darkMode? '#2d2d2d' : '#f0f0f0',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+    padding: '16px 24px',
+    background: darkMode? '#1a1a1a' : '#fff',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    position: 'sticky', top: 0, zIndex: 100
+  }
+
+  const btnStyle = {
+    padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+    background: darkMode? '#333' : '#f0f0f0',
+    color: darkMode? '#fff' : '#000'
   }
 
   return (
     <nav style={navStyle}>
       <div>
-        <Link to="/" style={{ marginRight: '15px', color: darkMode? '#fff' : '#000' }}>Home</Link>
-        <Link to="/create" style={{ marginRight: '15px', color: darkMode? '#fff' : '#000' }}>Create Post</Link>
+        <Link to="/" style={{ marginRight: '20px', color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Home</Link>
+        <Link to="/create" style={{ color: darkMode? '#fff' : '#000', textDecoration: 'none', fontWeight: '600' }}>Create Post</Link>
       </div>
       <div>
-        <button onClick={() => setDarkMode(!darkMode)} style={{ marginRight: '10px' }}>
-          {darkMode? '☀️ Light' : '🌙 Dark'}
+        <button onClick={() => setDarkMode(!darkMode)} style={{...btnStyle, marginRight: '12px' }}>
+          {darkMode? 'Light' : 'Dark'}
         </button>
-        <button onClick={logout}>Logout</button>
+        <button onClick={logout} style={btnStyle}>Logout</button>
       </div>
     </nav>
+  )
+}
+
+// CARD WRAPPER FOR CENTERED FORMS
+function AuthCard({ children }) {
+  const { darkMode } = useTheme()
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '20px', background: darkMode? '#0f0f0f' : '#f5f5f5'
+    }}>
+      <div style={{
+        width: '100%', maxWidth: '420px', padding: '40px',
+        background: darkMode? '#1a1a1a' : '#fff',
+        borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+      }}>
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -105,6 +139,10 @@ function Login() {
   const [toast, setToast] = useState(null)
   const navigate = useNavigate()
   const { darkMode } = useTheme()
+
+  useEffect(() => {
+    if (getToken()) navigate('/')
+  }, [navigate])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -119,25 +157,26 @@ function Login() {
   }
 
   const inputStyle = {
-    width: '100%', padding: '8px', marginBottom: '10px',
-    background: darkMode? '#333' : '#fff',
+    width: '100%', padding: '12px', marginBottom: '16px', borderRadius: '6px',
+    background: darkMode? '#2a2a2a' : '#fff',
     color: darkMode? '#fff' : '#000',
-    border: `1px solid ${darkMode? '#555' : '#ddd'}`
+    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
+    boxSizing: 'border-box'
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '50px auto' }}>
+    <AuthCard>
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <h2>Login</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>Login</h2>
       <form onSubmit={handleLogin}>
         <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} required />
         <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} required />
-        <button type="submit" style={{ width: '100%', padding: '10px' }}>Login</button>
+        <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>Login</button>
       </form>
-      <p style={{ marginTop: '15px', textAlign: 'center' }}>
-        Create a new account: <Link to="/register">Register</Link>
+      <p style={{ marginTop: '20px', textAlign: 'center', color: darkMode? '#aaa' : '#666' }}>
+        Create a new account: <Link to="/register" style={{ color: '#0066cc' }}>Register</Link>
       </p>
-    </div>
+    </AuthCard>
   )
 }
 
@@ -162,26 +201,27 @@ function Register() {
   }
 
   const inputStyle = {
-    width: '100%', padding: '8px', marginBottom: '10px',
-    background: darkMode? '#333' : '#fff',
+    width: '100%', padding: '12px', marginBottom: '16px', borderRadius: '6px',
+    background: darkMode? '#2a2a2a' : '#fff',
     color: darkMode? '#fff' : '#000',
-    border: `1px solid ${darkMode? '#555' : '#ddd'}`
+    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
+    boxSizing: 'border-box'
   }
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '50px auto' }}>
+    <AuthCard>
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <h2>Register</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>Register</h2>
       <form onSubmit={handleRegister}>
         <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} style={inputStyle} required />
         <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} required />
         <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} required />
-        <button type="submit" style={{ width: '100%', padding: '10px' }}>Register</button>
+        <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>Register</button>
       </form>
-      <p style={{ marginTop: '15px', textAlign: 'center' }}>
-        Already have account? <Link to="/login">Login</Link>
+      <p style={{ marginTop: '20px', textAlign: 'center', color: darkMode? '#aaa' : '#666' }}>
+        Already have account? <Link to="/login" style={{ color: '#0066cc' }}>Login</Link>
       </p>
-    </div>
+    </AuthCard>
   )
 }
 
@@ -189,16 +229,12 @@ function Register() {
 function Home() {
   const [posts, setPosts] = useState([])
   const [toast, setToast] = useState(null)
-  const navigate = useNavigate()
   const userId = getUserId()
   const { darkMode } = useTheme()
 
   useEffect(() => {
-    if (!getToken()) return navigate('/login')
-    axios.get(`${API}/posts`)
-     .then(res => setPosts(res.data))
-     .catch(() => navigate('/login'))
-  }, [navigate])
+    axios.get(`${API}/posts`).then(res => setPosts(res.data))
+  }, [])
 
   const deletePost = async (id) => {
     if (!window.confirm('Delete this post?')) return
@@ -212,27 +248,28 @@ function Home() {
   }
 
   const cardStyle = {
-    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
-    margin: '15px 0', padding: '15px', borderRadius: '5px',
-    background: darkMode? '#2d2d2d' : '#fff'
+    border: `1px solid ${darkMode? '#333' : '#e0e0e0'}`,
+    margin: '16px 0', padding: '20px', borderRadius: '8px',
+    background: darkMode? '#1a1a1a' : '#fff',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
   }
 
   return (
     <div>
       <Navbar />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <div style={{ padding: '20px' }}>
-        <h2>All Blog Posts</h2>
-        {posts.length === 0 && <p>No posts yet. Create one!</p>}
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
+        <h2 style={{ marginBottom: '24px' }}>All Blog Posts</h2>
+        {posts.length === 0 && <p style={{ textAlign: 'center', color: darkMode? '#aaa' : '#666' }}>No posts yet. Create one!</p>}
         {posts.map(post => (
           <div key={post.id} style={cardStyle}>
-            <h3><Link to={`/post/${post.id}`} style={{ color: darkMode? '#4da6ff' : '#0066cc' }}>{post.title}</Link></h3>
-            <p>{post.content.substring(0, 150)}...</p>
-            <small>By: {post.author.name}</small><br /><br />
+            <h3 style={{ marginTop: 0 }}><Link to={`/post/${post.id}`} style={{ color: darkMode? '#4da6ff' : '#0066cc', textDecoration: 'none' }}>{post.title}</Link></h3>
+            <p style={{ color: darkMode? '#ccc' : '#555', lineHeight: '1.6' }}>{post.content.substring(0, 150)}...</p>
+            <small style={{ color: darkMode? '#888' : '#999' }}>By: {post.author.name}</small><br /><br />
             {post.author.id === userId && (
               <div>
-                <Link to={`/edit/${post.id}`}><button style={{ marginRight: '10px' }}>Edit</button></Link>
-                <button onClick={() => deletePost(post.id)} style={{ background: '#ff4444', color: 'white' }}>Delete</button>
+                <Link to={`/edit/${post.id}`}><button style={{ marginRight: '10px', padding: '6px 12px', borderRadius: '4px', border: 'none', background: darkMode? '#333' : '#f0f0f0', cursor: 'pointer' }}>Edit</button></Link>
+                <button onClick={() => deletePost(post.id)} style={{ padding: '6px 12px', borderRadius: '4px', border: 'none', background: '#ff4444', color: 'white', cursor: 'pointer' }}>Delete</button>
               </div>
             )}
           </div>
@@ -251,10 +288,6 @@ function CreatePost() {
   const navigate = useNavigate()
   const { darkMode } = useTheme()
 
-  useEffect(() => {
-    if (!getToken()) navigate('/login')
-  }, [navigate])
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -267,26 +300,27 @@ function CreatePost() {
   }
 
   const inputStyle = {
-    width: '100%', padding: '8px', marginBottom: '10px',
-    background: darkMode? '#333' : '#fff',
+    width: '100%', padding: '12px', marginBottom: '16px', borderRadius: '6px',
+    background: darkMode? '#2a2a2a' : '#fff',
     color: darkMode? '#fff' : '#000',
-    border: `1px solid ${darkMode? '#555' : '#ddd'}`
+    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
+    boxSizing: 'border-box'
   }
 
   return (
     <div>
       <Navbar />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px' }}>
         <h2>Create New Post</h2>
         <form onSubmit={handleSubmit}>
           <input placeholder="Post Title" value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} required />
-          <textarea placeholder="Write your content here..." rows="12" value={content} onChange={e => setContent(e.target.value)} style={inputStyle} required />
-          <label style={{ display: 'block', marginBottom: '15px' }}>
+          <textarea placeholder="Write your content here..." rows="14" value={content} onChange={e => setContent(e.target.value)} style={{...inputStyle, fontFamily: 'inherit'}} required />
+          <label style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', cursor: 'pointer' }}>
             <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} style={{ marginRight: '8px' }} />
             Publish immediately
           </label>
-          <button type="submit" style={{ padding: '10px 20px' }}>{published? 'Publish' : 'Save Draft'}</button>
+          <button type="submit" style={{ padding: '12px 24px', borderRadius: '6px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>{published? 'Publish' : 'Save Draft'}</button>
         </form>
       </div>
     </div>
@@ -304,7 +338,6 @@ function EditPost() {
   const { darkMode } = useTheme()
 
   useEffect(() => {
-    if (!getToken()) return navigate('/login')
     axios.get(`${API}/posts/${id}`).then(res => {
       setTitle(res.data.title)
       setContent(res.data.content)
@@ -324,26 +357,27 @@ function EditPost() {
   }
 
   const inputStyle = {
-    width: '100%', padding: '8px', marginBottom: '10px',
-    background: darkMode? '#333' : '#fff',
+    width: '100%', padding: '12px', marginBottom: '16px', borderRadius: '6px',
+    background: darkMode? '#2a2a2a' : '#fff',
     color: darkMode? '#fff' : '#000',
-    border: `1px solid ${darkMode? '#555' : '#ddd'}`
+    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
+    boxSizing: 'border-box'
   }
 
   return (
     <div>
       <Navbar />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px' }}>
         <h2>Edit Post</h2>
         <form onSubmit={handleUpdate}>
           <input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} required />
-          <textarea rows="12" value={content} onChange={e => setContent(e.target.value)} style={inputStyle} required />
-          <label style={{ display: 'block', marginBottom: '15px' }}>
+          <textarea rows="14" value={content} onChange={e => setContent(e.target.value)} style={{...inputStyle, fontFamily: 'inherit'}} required />
+          <label style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', cursor: 'pointer' }}>
             <input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)} style={{ marginRight: '8px' }} />
             Published
           </label>
-          <button type="submit" style={{ padding: '10px 20px' }}>Update Post</button>
+          <button type="submit" style={{ padding: '12px 24px', borderRadius: '6px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', fontWeight: '600' }}>Update Post</button>
         </form>
       </div>
     </div>
@@ -356,19 +390,15 @@ function PostPage() {
   const [post, setPost] = useState(null)
   const [comment, setComment] = useState('')
   const [toast, setToast] = useState(null)
-  const navigate = useNavigate()
   const { darkMode } = useTheme()
 
   const loadPost = () => {
-    axios.get(`${API}/posts/${id}`)
-     .then(res => setPost(res.data))
-     .catch(() => navigate('/'))
+    axios.get(`${API}/posts/${id}`).then(res => setPost(res.data))
   }
 
   useEffect(() => {
-    if (!getToken()) return navigate('/login')
     loadPost()
-  }, [id, navigate])
+  }, [id])
 
   const addComment = async (e) => {
     e.preventDefault()
@@ -383,36 +413,42 @@ function PostPage() {
     }
   }
 
-  if (!post) return <div><Navbar /><div style={{ padding: '20px' }}>Loading...</div></div>
+  if (!post) return <div><Navbar /><div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div></div>
 
   const inputStyle = {
-    width: '70%', padding: '8px', marginRight: '10px',
-    background: darkMode? '#333' : '#fff',
+    width: '100%', padding: '12px', borderRadius: '6px',
+    background: darkMode? '#2a2a2a' : '#fff',
     color: darkMode? '#fff' : '#000',
-    border: `1px solid ${darkMode? '#555' : '#ddd'}`
+    border: `1px solid ${darkMode? '#444' : '#ddd'}`,
+    boxSizing: 'border-box'
   }
 
   return (
     <div>
       <Navbar />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-        <h2>{post.title}</h2>
-        <p style={{ color: darkMode? '#aaa' : '#666', marginBottom: '20px' }}>By: {post.author.name}</p>
-        <div style={{ whiteSpace: 'pre-wrap', marginBottom: '30px' }}>{post.content}</div>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px' }}>
+        <h1 style={{ marginBottom: '8px' }}>{post.title}</h1>
+        <p style={{ color: darkMode? '#888' : '#666', marginBottom: '24px' }}>By: {post.author.name}</p>
+        <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8', marginBottom: '40px', fontSize: '16px' }}>{post.content}</div>
 
-        <h3>Comments ({post.comments.length})</h3>
-        <div style={{ marginBottom: '20px' }}>
+        <h3 style={{ borderTop: `1px solid ${darkMode? '#333' : '#e0e0e0'}`, paddingTop: '24px' }}>Comments ({post.comments.length})</h3>
+        <div style={{ marginBottom: '24px' }}>
           {post.comments.map(c => (
-            <div key={c.id} style={{ borderLeft: `3px solid ${darkMode? '#555' : '#ddd'}`, paddingLeft: '10px', margin: '10px 0' }}>
-              <b>{c.author.name}:</b> {c.content}
+            <div key={c.id} style={{
+              borderLeft: `3px solid ${darkMode? '#444' : '#ddd'}`,
+              paddingLeft: '16px', margin: '16px 0',
+              background: darkMode? '#1a1a1a' : '#f9f9f9',
+              padding: '12px', borderRadius: '6px'
+            }}>
+              <b style={{ color: darkMode? '#4da6ff' : '#0066cc' }}>{c.author.name}:</b> {c.content}
             </div>
           ))}
         </div>
 
-        <form onSubmit={addComment}>
-          <input placeholder="Write a comment..." value={comment} onChange={e => setComment(e.target.value)} style={inputStyle} required />
-          <button type="submit">Add Comment</button>
+        <form onSubmit={addComment} style={{ display: 'flex', gap: '12px' }}>
+          <input placeholder="Write a comment..." value={comment} onChange={e => setComment(e.target.value)} style={{...inputStyle, flex: 1}} required />
+          <button type="submit" style={{ padding: '12px 24px', borderRadius: '6px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>Add Comment</button>
         </form>
       </div>
     </div>
@@ -427,10 +463,10 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/create" element={<CreatePost />} />
-          <Route path="/edit/:id" element={<EditPost />} />
-          <Route path="/post/:id" element={<PostPage />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+          <Route path="/edit/:id" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
+          <Route path="/post/:id" element={<ProtectedRoute><PostPage /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
