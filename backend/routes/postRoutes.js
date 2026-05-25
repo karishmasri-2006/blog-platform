@@ -1,54 +1,72 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
-const authMiddleware = require('../middleware/auth');
-
+const jwt = require('jsonwebtoken');
 const prisma = new PrismaClient();
 
-// Get all posts
-router.get('/', async (req, res) => {
+// Middleware to check token
+const auth = async (req, res, next) => {
   try {
-    const posts = await prisma.post.findMany({
-      include: { author: { select: { id: true, name: true, email: true } } }
-    });
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'No token' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch {
+    res.status(401).json({ message: 'Invalid token' });
   }
+};
+
+// Get all published posts
+router.get('/', async (req, res) => {
+  const posts = await prisma.post.findMany({
+    where: { published: true },
+    include: { author: { select: { name: true, id: true } } },
+    orderBy: { createdAt: 'desc' }
+  });
+  res.json(posts);
+});
+
+// Get single post with comments
+router.get('/:id', async (req, res) => {
+  const post = await prisma.post.findUnique({
+    where: { id: req.params.id },
+    include: {
+      author: { select: { name: true, id: true } },
+      comments: { include: { author: { select: { name: true } } } }
+    }
+  });
+  res.json(post);
 });
 
 // Create post
-router.post('/', authMiddleware, async (req, res) => {
-  try {
-    const { title, content } = req.body;
-    const post = await prisma.post.create({
-      data: { 
-        title, 
-        content, 
-        authorId: req.user.id 
-      }
-    });
-    res.json(post);
-  } catch (error) {
-    res.status(400).json({ message: 'Failed to create post' });
-  }
+router.post('/', auth, async (req, res) => {
+  const { title, content, published } = req.body;
+  const post = await prisma.post.create({
+    data: { title, content, published, authorId: req.userId }
+  });
+  res.json(post);
 });
 
-// Get single post
-router.get('/:id', async (req, res) => {
-  try {
-    const post = await prisma.post.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: { 
-        author: { select: { id: true, name: true } },
-        comments: { include: { author: { select: { name: true } } } }
-      }
-    });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
+// Update post - only owner
+router.put('/:id', auth, async (req, res) => {
+  const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+  if (post.authorId!== req.userId) return res.status(403).json({ message: 'Not yours' });
+
+  const updated = await prisma.post.update({
+    where: { id: req.params.id },
+    data: req.body
+  });
+  res.json(updated);
+});
+
+// Delete post - only owner
+router.delete('/:id', auth, async (req, res) => {
+  const post = await prisma.post.findUnique({ where: { id: req.params.id } });
+  if (post.authorId!== req.userId) return res.status(403).json({ message: 'Not yours' });
+
+  await prisma.post.delete({ where: { id: req.params.id } });
+  res.json({ message: 'Deleted' });
 });
 
 module.exports = router;
