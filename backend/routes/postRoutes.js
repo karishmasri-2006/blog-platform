@@ -1,103 +1,113 @@
-const express = require('express');
-const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
-const prisma = new PrismaClient();
+const express = require('express')
+const router = express.Router()
+const { PrismaClient } = require('@prisma/client')
+const protect = require('../middleware/auth')
 
-// Auth middleware
-const auth = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'No token' });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
+const prisma = new PrismaClient()
 
-// GET all published posts - for Home page
+// GET ALL POSTS - WITH COMMENTS COUNT
 router.get('/', async (req, res) => {
   try {
     const posts = await prisma.post.findMany({
-      where: { published: true },
-      include: { author: { select: { name: true, id: true } } },
+      include: {
+        author: { select: { id: true, name: true } },
+        comments: {
+          include: {
+            author: { select: { id: true, name: true } }
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
-    });
-    res.json(posts);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    })
+    res.json(posts)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-// GET single post with comments - for Post page
+// GET SINGLE POST
 router.get('/:id', async (req, res) => {
   try {
     const post = await prisma.post.findUnique({
-      where: { id: req.params.id },
+      where: { id: parseInt(req.params.id) },
       include: {
-        author: { select: { name: true, id: true } },
+        author: { select: { id: true, name: true } },
         comments: {
-          include: { author: { select: { name: true } } },
+          include: {
+            author: { select: { id: true, name: true } }
+          },
           orderBy: { createdAt: 'asc' }
         }
       }
-    });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    res.json(post);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    })
+    if (!post) return res.status(404).json({ message: 'Post not found' })
+    res.json(post)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-// CREATE post - with publish/draft
-router.post('/', auth, async (req, res) => {
+// CREATE POST
+router.post('/', protect, async (req, res) => {
   try {
-    const { title, content, published } = req.body;
+    const { title, content, published } = req.body
     const post = await prisma.post.create({
       data: {
         title,
         content,
         published: published || false,
-        authorId: req.userId
+        authorId: req.user.id
+      },
+      include: {
+        author: { select: { id: true, name: true } }
       }
-    });
-    res.json(post);
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to create post' });
+    })
+    res.status(201).json(post)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-// UPDATE post - only owner can edit
-router.put('/:id', auth, async (req, res) => {
+// UPDATE POST
+router.put('/:id', protect, async (req, res) => {
   try {
-    const post = await prisma.post.findUnique({ where: { id: req.params.id } });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.authorId!== req.userId) return res.status(403).json({ message: 'Not your post' });
+    const post = await prisma.post.findUnique({
+      where: { id: parseInt(req.params.id) }
+    })
 
-    const updated = await prisma.post.update({
-      where: { id: req.params.id },
-      data: req.body
-    });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to update' });
+    if (!post) return res.status(404).json({ message: 'Post not found' })
+    if (post.authorId!== req.user.id) return res.status(401).json({ message: 'Not authorized' })
+
+    const updatedPost = await prisma.post.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body,
+      include: {
+        author: { select: { id: true, name: true } }
+      }
+    })
+    res.json(updatedPost)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-// DELETE post - only owner can delete
-router.delete('/:id', auth, async (req, res) => {
+// DELETE POST
+router.delete('/:id', protect, async (req, res) => {
   try {
-    const post = await prisma.post.findUnique({ where: { id: req.params.id } });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
-    if (post.authorId!== req.userId) return res.status(403).json({ message: 'Not your post' });
+    const post = await prisma.post.findUnique({
+      where: { id: parseInt(req.params.id) }
+    })
 
-    await prisma.post.delete({ where: { id: req.params.id } });
-    res.json({ message: 'Post deleted' });
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to delete' });
+    if (!post) return res.status(404).json({ message: 'Post not found' })
+    if (post.authorId!== req.user.id) return res.status(401).json({ message: 'Not authorized' })
+
+    await prisma.post.delete({
+      where: { id: parseInt(req.params.id) }
+    })
+    res.json({ message: 'Post deleted' })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
