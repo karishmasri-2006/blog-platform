@@ -5,7 +5,13 @@ const postRoutes = require('./routes/postRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 
 const app = express();
-app.use(cors());
+
+// CORS FIX - Allow your frontend
+app.use(cors({
+  origin: ['https://blog-platform-f7yo.onrender.com', 'http://localhost:5173'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);

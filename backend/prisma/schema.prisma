@@ -3,38 +3,38 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // ← NOT sqlite. You have Postgres!
+  provider = "postgresql"
   url = env("DATABASE_URL")
 }
 
 model User {
-  id Int @id @default(autoincrement())
+  id String @id @default(cuid())
+  name String
   email String @unique
   password String
   posts Post[]
   comments Comment[]
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Post {
-  id Int @id @default(autoincrement())
+  id String @id @default(cuid())
   title String
-  content String @db.Text // ← KEEP THIS. Postgres supports @db.Text
-  authorId Int
-  author User @relation(fields: [authorId], references: [id])
+  content String
+  published Boolean @default(false)
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments Comment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Comment {
-  id Int @id @default(autoincrement())
-  content String @db.Text // ← KEEP THIS. Postgres supports @db.Text
-  postId Int
+  id String @id @default(cuid())
+  content String
+  postId String
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId Int
-  author User @relation(fields: [authorId], references: [id])
+  authorId String
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
